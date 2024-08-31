@@ -1,0 +1,26 @@
+pythonでpostgresqlのカラム名を全て取得するコードは
+
+以下は、PythonでPostgreSQLの全てのカラム名を取得する例です。psycopg2パッケージを使用します。
+
+
+
+
+import psycopg2
+
+conn = psycopg2.connect(database="your_database_name", user="your_user_name", password="your_password", host="your_host", port="your_port")
+cur = conn.cursor()
+cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'your_table_name'")
+
+rows = cur.fetchall()
+
+for row in rows:
+    print(row[0])
+
+cur.close()
+conn.close()
+
+
+
+
+
+この例では、PostgreSQLのinformation_schema.columnsテーブルを使用して、指定したテーブル名の全てのカラム名を取得しています。psycopg2を使用して、データベースに接続してcursorオブジェクトを作成します。その後、cursor.execute()を使用して、SQLクエリを実行し、カラム名を取得します。最後に、cursor.fetchall()を使用して、全てのカラム名を取得し、それぞれを出力しています。接続を閉じるために、cursor.close()とconn.close()を使用しています。

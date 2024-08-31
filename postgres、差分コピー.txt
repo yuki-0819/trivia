@@ -1,0 +1,181 @@
+pythonでpostgresqlのテーブルデータを別サーバーのテーブルへ差分内容コピーと進捗のインジケータ表示のコードは
+
+以下は、PythonでPostgreSQLのテーブルデータを別サーバーのテーブルへ差分内容コピーするコードです。また、進捗のインジケータ表示も行います。
+
+
+import psycopg2
+import pandas as pd
+from tqdm import tqdm
+
+# 接続先DB情報
+src_host = 'localhost'
+src_port = '5432'
+src_dbname = 'source_db'
+src_user = 'postgres'
+src_password = 'password'
+
+# コピー先DB情報
+dst_host = 'localhost'
+dst_port = '5432'
+dst_dbname = 'destination_db'
+dst_user = 'postgres'
+dst_password = 'password'
+
+# テーブル名
+table_name = 'my_table'
+
+# インジケータ表示用
+with tqdm(total=2) as pbar:
+    # 接続元DBに接続
+    src_conn = psycopg2.connect(
+        host=src_host,
+        port=src_port,
+        dbname=src_dbname,
+        user=src_user,
+        password=src_password
+    )
+    src_cursor = src_conn.cursor()
+
+    # 接続先DBに接続
+    dst_conn = psycopg2.connect(
+        host=dst_host,
+        port=dst_port,
+        dbname=dst_dbname,
+        user=dst_user,
+        password=dst_password
+    )
+    dst_cursor = dst_conn.cursor()
+
+    # 接続元DBからデータを取得
+    src_cursor.execute(f"SELECT * FROM {table_name}")
+    src_data = src_cursor.fetchall()
+    src_columns = [desc[0] for desc in src_cursor.description]
+
+    # 取得したデータをpandasのDataFrameに変換
+    src_df = pd.DataFrame(src_data, columns=src_columns)
+
+    # インジケータ表示更新
+    pbar.update(1)
+
+    # 接続先DBから差分データを取得
+    dst_cursor.execute(f"SELECT * FROM {table_name}")
+    dst_data = dst_cursor.fetchall()
+    dst_columns = [desc[0] for desc in dst_cursor.description]
+    dst_df = pd.DataFrame(dst_data, columns=dst_columns)
+
+    # 差分データを抽出
+    diff_df = src_df.merge(dst_df, on=src_columns, how='outer', indicator=True)
+    diff_df = diff_df[diff_df['_merge'] == 'left_only']
+
+    # インジケータ表示更新
+    pbar.update(1)
+
+    # コピー先DBにデータを挿入
+    for row in tqdm(diff_df.to_records(index=False), total=len(diff_df)):
+        dst_cursor.execute(f"INSERT INTO {table_name} VALUES {row}")
+
+    # コミット
+    dst_conn.commit()
+
+    # 接続を閉じる
+    src_cursor.close()
+    src_conn.close()
+    dst_cursor.close()
+    dst_conn.close()
+
+
+
+
+
+
+
+ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
+# PostgreSQLへの接続情報
+	
+
+# PostgreSQLへの接続情報
+            src_host = '172.50.1.249'
+            src_port = 5432
+            src_dbname = 'Dezima_DB'
+            src_user = 'postgres'
+            src_password = 'postgres'
+
+            dest_host = '172.28.57.124'
+            dest_port = 5432
+            dest_dbname = 'Dezima_DB'
+            dest_user = 'postgres'
+            dest_password = 'postgres'
+
+            # テーブルの名前
+            table_name = 'achievement.checksheet'
+
+            columns = ["id", "type", "linecode", "buhincode", "checksheetname", "shimei", "daisuu", "naiyou1", "naiyou2",
+                       "naiyou3", "naiyou4", "naiyou5", "naiyou6", "naiyou7", "naiyou8", "naiyou9", "naiyou10", "naiyou11",
+                       "naiyou12", "naiyou13", "naiyou14", "naiyou15", "naiyou16", "naiyou17", "naiyou18", "naiyou19",
+                       "naiyou20", "naiyou21", "naiyou22", "naiyou23", "naiyou24", "naiyou25", "naiyou26", "naiyou27",
+                       "naiyou28", "naiyou29", "naiyou30", "syounin1", "syounin2", "syounin3", "kakunincyouhyou", "nitizi",
+                       "cyoku", "syounin4"]
+
+            # Tkinterで進捗状況を表示するためのウィジェットを作成
+            progress_window_1 = tk.Tk()
+            progress_window_1.title('生産実績データ転送進捗')
+            progress_label_1 = tk.Label(progress_window_1, text='データ転送中...')
+            progress_label_1.pack()
+            progress_bar_1 = ttk.Progressbar(progress_window_1, orient='horizontal', length=300, mode='determinate')
+            progress_bar_1.pack()
+            progress_window_1.update()
+
+            # PostgreSQLへの接続を確立
+            src_conn = psycopg2.connect(
+                host=src_host,
+                port=src_port,
+                dbname=src_dbname,
+                user=src_user,
+                password=src_password
+            )
+            src_cursor = src_conn.cursor()
+
+            dest_conn = psycopg2.connect(
+                host=dest_host,
+                port=dest_port,
+                dbname=dest_dbname,
+                user=dest_user,
+                password=dest_password
+            )
+            dest_cursor = dest_conn.cursor()
+
+            # ソーステーブルの全行数を取得
+            src_cursor.execute(f'SELECT COUNT(*) FROM {table_name}')
+            total_rows = src_cursor.fetchone()[0]
+
+            # コピー先のテーブルから最新のレコードを取得
+            dest_cursor.execute(f'SELECT MAX(id) FROM {table_name}')
+            latest_id = dest_cursor.fetchone()[0]
+
+            # 差分を取得するためのクエリを実行
+            if latest_id is None:
+                src_cursor.execute(f'SELECT * FROM {table_name}')
+            else:
+                src_cursor.execute(f'SELECT * FROM {table_name} WHERE id > {latest_id}')
+
+            insert_sql = f'INSERT INTO {table_name} ({", ".join(columns)}) VALUES ({", ".join(["%s"] * len(columns))})'
+            # 取得した差分をコピー先のテーブルに挿入
+            for i, row in enumerate(src_cursor):
+                dest_cursor.execute(insert_sql, row)
+                # dest_cursor.execute(f'INSERT INTO {table_name} VALUES %s', row)
+                progress_bar_1['value'] = (i + 1) / total_rows * 100
+                progress_window_1.update()
+
+            dest_conn.commit()
+
+            # PostgreSQLへの接続をクローズ
+            src_cursor.close()
+            src_conn.close()
+            dest_cursor.close()
+            dest_conn.close()
+
+            # Tkinterのウィンドウを閉じる
+            progress_bar_1['value'] = 100
+            progress_label_1['text'] = 'データ転送完了'
+            progress_window_1.update()
+            progress_window_1.after(2000, progress_window_1.destroy)
