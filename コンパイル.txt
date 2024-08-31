@@ -1,0 +1,35 @@
+＜Pyinstaller使用＞
+
+C:\Python\virtualenv\koubai\Scripts\Activate.ps1
+
+cd C:\Python\project\koubai
+
+cd G:\マイドライブ\python\project\koubai
+
+cd C:\workdir
+
+pyinstaller purchase_system.py --add-data ".\config;.\config" --add-data ".\program\form;.\program\form" --add-data ".\program\picture;.\program\picture" --add-data ".\program\temp;.\program\temp" --add-data ".\program\driver;.\program\driver"
+
+
+
+
+
+
+送り状、オートメーション
+pyinstaller a_okurizyou_keep.py --add-data ".\config;.\config" --add-data ".\program\temp;.\program\temp" --add-data ".\program\driver;.\program\driver"
+
+
+まいとーく、オートメーション
+pyinstaller a_mytook.py --add-data ".\program\driver;.\program\driver" --add-data ".\config;.\config"
+
+
+CUTE2購入品
+pyinstaller o_purchased_items_old.py --noconsole --add-data ".\config;.\config"
+
+
+
+
+#プロンプト表示
+pyinstaller gyoumu_tools.py --windowed --add-data ".\config;.\config" --add-data ".\program\form;.\program\form" --add-data ".\program\format\;.\program\format" --add-data ".\program\picture;.\program\picture" --add-data ".\program\temp;.\program\temp" --add-data ".\program\driver;.\program\driver"
+pyinstaller gyoumu_tools.py --noconsole --add-data ".\config;.\config" --add-data ".\program\form;.\program\form" --add-data ".\program\format\;.\program\format" --add-data ".\program\picture;.\program\picture" --add-data ".\program\temp;.\program\temp" --add-data ".\program\driver;.\program\driver"
+pyinstaller gyoumu_tools.py --noconsole --add-data ".\config\db_conn_conf.txt;.\config" --add-data ".\program\form\contact_address_list.xlsx;.\program\form" --add-data ".\program\form\order_list_alumi_kaita.xlsx;.\program\form" --add-data ".\program\form\try_order_form.xlsx;.\program\form" --add-data ".\program\format\alumi_order_forceone.xlsx;.\program\format" --add-data ".\program\format\alumi_order_kaita.xlsx;.\program\format" --add-data ".\program\format\alumi_order_mitoya.xlsx;.\program\format" --add-data ".\program\picture\syounin_mitoya_yamamoto.png;.\program\picture" --add-data ".\program\picture\syounin_ran.png;.\program\picture" --add-data ".\program\temp;.\program\temp" 
