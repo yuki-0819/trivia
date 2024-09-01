@@ -1,0 +1,395 @@
+「OSファイル操作」
+
+
+指定フォルダのファイル一覧取得（リスト形式）
+file_l = os.listdir(folder_path)
+
+フォルダパスとファイル名の結合
+os.path.join(folder_path, file_name)
+
+指定のフォルダに複数のキーワードが一致した場合ファイルパスをリストへ代入
+file_l = os.listdir(folder_path)
+f_name = [code, "納品書兼請求書.xlsx"]
+for file_name in file_l:
+    if all(keyword in file_name for keyword in f_name):
+        f_name_l.append(str(os.path.join(folder_path, file_name)))
+
+ファイルの上書きコピー（ファイル名変更なし）
+file = shutil.copy2(tb_l[11].get(), addr + "\\")
+
+ファイルの上書きコピー（ファイル名変更あり）
+send_f = shutil.copy(send_f_1, os.getcwd() + r'\program\temp\日特向け注文書_三刀屋金属.pdf')
+
+変数の数字にカンマ区切りをつける（文字型になる）
+"{:,}".format(int(r.amount))
+
+フォルダ作成
+os.mkdir(Save_file1 + "_有償材請求書")
+
+フォルダごとファイル削除
+shutil.rmtree(mv, ignore_errors=True)
+
+指定の年月の最終日を取得
+ans = calendar.monthrange(int(data[0:4]), int(data[4:6]))[1]
+
+指定のファイル名が一致する場合ファイルパスの取得
+matching_files = glob.glob(folder_path + "\\" + user + ".png")
+
+変数の値をdatetime型へ変換
+dt = datetime.datetime.strptime(tb_l[16].get(), "%Y-%m-%d %H:%M:%S.%f")
+
+変数の値をdate型へ変換
+dt_s = datetime.datetime(int(str(y_s[0:4])), int(str(y_s[4:6])), int(str(y_s[6:8])), ).date()
+
+ファイル選択
+IDir = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+file_name = ""
+send_f_1 = tkinter.filedialog.askopenfilename(initialfile=file_name, initialdir=IDir, title="ファイル選択", filetypes=[("PDFファイル", "*.pdf")])
+
+ファイル保存場所選択
+IDir = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+file_name = ""
+Save_file1 = tkinter.filedialog.asksaveasfilename(initialfile=file_name, initialdir=IDir, title="保存箇所選択", filetypes=[("Excelファイル", "*.xlsx")])
+
+数値の小数点以下を四捨五入
+ans = Decimal(str(ans))
+ans = ans.quantize(Decimal('0'), rounding=ROUND_HALF_UP)
+ans = format(int(ans), ',')
+
+
+
+
+
+「SQL文」
+
+
+SQLインサート文
+table_name = ''
+col_l = []
+sql = f'INSERT INTO {table_name} ({", ".join(col_l)}) VALUES ({", ".join(["%s"] * len(col_l))})'
+cur.execute(sql, ans_l)
+
+SQLデリート文
+Cur.execute(f"delete from {table_name_1} where id = %s;", (values[0],))
+
+SQLアップデート文
+for i, r in enumerate(tb_l):
+    Cur.execute(f'update {table_name} set {col_l[i]} = %s where id = %s;', (r.get(), id,))
+
+アクセスデータベース接続
+conn = pyodbc.connect(r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};" rf"DBQ={addr};")
+cursor = conn.cursor()
+cur.execute(sql_1, ans_l)
+
+オラクルデータベース接続
+import oracledb
+oracledb.init_oracle_client() ※保存場所が任意の場合「lib_dir=r"C:\instantclient_19_18"」
+engine_ora = create_engine(f'oracle+oracledb://{user_ora}:{password_ora}@{host_ora}:{port_ora}/{dbname_ora}', isolation_level="AUTOCOMMIT")
+query = 'SELECT * FROM KLKBUSER.KLKTUSER'
+df_mst = pandas.read_sql(sql=query, con=engine_ora)
+
+
+
+
+「DataFrene操作」
+
+
+DBよりテーブル取得
+df = pandas.read_sql(sql=text('SELECT * FROM t_achievements.business_memo'), con=engine.connect())
+
+csvよりデータ取得
+df = pandas.read_csv(open_file, header=None, index_col=False, encoding="cp932").fillna("")
+
+エクセルよりデータ取得
+df = pandas.read_excel(open_file, sheet_name='Sheet1', header=0, engine='openpyxl', dtype={0: str, 1: str, 2: str, 3: str, 4: float, 5: str, 6: str}).fillna("")
+
+dataframeをそのままcsvに出力
+df.to_csv(Save_file1 + "_3309.csv", index=False, encoding='cp932')
+
+dataframeをそのままエクセル出力
+df.to_excel('data/dst/pandas_to_excel_no_index_header.xlsx', index=False, header=False ,sheet_name='サンプルデータ')
+
+dataframeの値全てをクリップボード
+df.to_clipboard()
+
+dataframeから対象と値を可変で取得
+getattr(r, c)
+
+dataframeの列でのソートとNaNを空白
+df_hst.sort_values(by=['parts_no', 'deadline'], ascending=[True, True]).fillna("")
+
+dataframeで指定の列で文字数が7より多い行は指定の列へ空白を代入　※applyはdataframeの行や列に関数を適用させる
+df.loc[(df['material_code'].apply(lambda x: len(str(x))) > 7), 'unit_2'] = ""
+
+文字型をdatetime型に変換しdate型へ変換
+ans = datetime.datetime.strptime(str(getattr(r, c)), "%Y%m%d").date()
+
+dataframeで列の値の文字を置き換える
+df['parts_no'] = df['parts_no'].str.replace(' ', '-')
+
+dataframeのカラム名の一括変更
+df.columns = ["item_1", "item_2", "material_code", "standard", "size", "parts_no_1", "parts_no_2"]
+
+dataframeの空白の値を別の値に置き換える
+df.replace('', numpy.nan, inplace=True)
+
+dataframeに読み込み時、特定の列のデータ型変更
+dtype_dict = {'suppliers_code': 'int'}
+df = pandas.read_csv(open_file, header=0, encoding="cp932", dtype=dtype_dict).fillna("")
+
+特定の列のデータ型変更
+df['suppliers_code'] = df['suppliers_code'].astype(str)
+
+特定の列の一番最後の値の取得
+no = df_no['invoice_number'].tail(1).values[0]
+
+dataframeで特定の列の削除
+df_ans = df_ans.drop('id', axis=1)
+df_master = df_master.drop(columns=['total'])
+
+dataframeの一番最後の行を削除
+df_file = df_file.drop(df_file.index[-1])
+
+dataframeでカラムの数の取得
+r = df_file.shape[1]
+
+dataframeで行数の取得
+r = df_file.shape[0]
+
+dataframeで列の値をdate型へ変換する
+df['receipt_date'] = pd.to_datetime(df['receipt_date']).dt.date
+
+変数内のシリアル値（エクセルの日）を日に変換
+data = (datetime.datetime(1899, 12, 30) + datetime.timedelta(r.col_11)).strftime('%Y-%m-%d')
+
+dataframeの指定の列の行の値を検索し、一致した箇所の指定の列へ値を代入
+df.loc[(df['material_code'] == row.material_code), 'supplier_code'] = row.supplier_code
+
+dataframeの検索で値の最初の文字から検索値を含む検索
+df_order = df_order[(df_order['order_id'].str.startswith('alm'))]
+
+dataframeの検索で指定の値を含む検索
+df = df[(df['material_cd'].str.contains(o_no))]
+
+dataframeの検索で特定の値を含まない検索
+df = df[(~df['merchandise_name'].str.contains("消費税", na=False))]
+
+dataframeを行方向で結合
+df = pd.concat([df, new_row], ignore_index=True)
+
+dataframeでリストの値を列名で追加（値はNone）
+col_l = ["material_code", "supplier_code", "parts_no", "thickness", "width", "width_2", "length_2", "wc"]
+df = df.assign(**{column_name: None for column_name in col_l})
+
+指定の列の数字を四捨五入
+df_ans['quantity'] = df_ans['quantity'].map(lambda x: int(Decimal(str(x)).quantize(Decimal('0'), rounding=ROUND_HALF_UP)))
+
+dataframeで指定の列でグループ化し、指定の列の値の合計を別の列を作成し代入
+df['total_weight'] = df.groupby(['merchandise_name', 'unit_price'])['quantity'].transform('sum')
+
+dataframeで指定の列の値と重複している行を削除（保持する値は一番最初の値）
+df = df.drop_duplicates(subset=['merchandise_name', 'unit_price'], keep='first')
+
+dataframeで指定の列の数値にカンマをつける
+df['total_weight'] = df['total_weight'].apply(lambda x: f'{x:,}')
+
+dataframeの列のデータ型一括変更
+d_types = {'year': float, 'month': float, 'day': float, 'slip_no': float, 'merchandise_code': float}
+df = df.astype(d_types)
+
+dataframeでa列の値で空白の場合は、1つ前の行の値のa列、b列、c列をコピーして代入し、値がある場合にはそのままの値を使用
+previous_row_values = None
+for i in range(1, len(df)):
+    if pd.isna(df.loc[i, 'parts_no']) or df.loc[i, 'parts_no'] == '':
+        df.loc[i, ['parts_no', 'material_cd', 'material_colour', 'plate_thickness', 'width', 'length']] = df.loc[i - 1, ['parts_no', 'material_cd', 'material_colour', 'plate_thickness', 'width', 'length']]
+    else:
+        previous_row_values = df.loc[i, ['parts_no', 'material_cd', 'material_colour', 'plate_thickness', 'width', 'length']]
+    if pd.isna(df.loc[i, 'parts_no']) or df.loc[i, 'parts_no'] == '':
+        df.loc[i, ['parts_no', 'material_cd', 'material_colour', 'plate_thickness', 'width', 'length']] = previous_row_values
+
+dataframeへリストの値を行方向へ追加
+new_row = [7, 8]
+df.loc[len(df)] = new_row
+
+
+
+
+
+「Openpyxl操作」
+
+
+セルの文書位置設定
+alignment_r = Alignment(horizontal='right', vertical='center')
+ws.cell(row=1, column=14).alignment = alignment_r
+
+セルの罫線設定
+border = Border(top=Side(style='thin', color='000000'), bottom=Side(style='thin', color='000000'), left=Side(style='thin', color='000000'), right=Side(style='thin', color='000000'))
+for row_num in range(12, 25):
+    for col_num in range(1, 15):
+        ws.cell(row=row_num, column=col_num).border = border
+
+セルのフォント設定
+font_size_2 = Font(name='游ゴシック', size=20, bold=True, underline='single')
+ws.cell(row=1, column=7).font = font_size_2
+
+セルの行の幅の変更
+ws.row_dimensions[cell.row].height = 20
+
+セルの結合
+ws.merge_cells(start_row=2, start_column=1, end_row=3, end_column=4)
+
+エクセルのプリント設定
+ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+ws.page_setup.paperSize = ws.PAPERSIZE_A4
+ws.page_margins = PageMargins(left=0.7402, right=0.1614, top=0.3701, bottom=0.1614)　# 数値はインチ表記
+
+セルへ画像の貼り付け
+img_file = os.getcwd() + r'\program\picture\klx_logo_invoice.png'
+img = openpyxl.drawing.image.Image(img_file)
+img.width = 9 * 22
+img.height = 3 * 20.75
+ws.add_image(img, 'H9')
+
+エクセルをPDF変換
+app = xw.App(visible=False)
+wb = xw.Book(os.getcwd() + r'\program\temp\temp.xlsx')
+file_path = os.path.join(Save_file1 + "_有償材請求書", "有償材請求書.pdf")
+wb.to_pdf(path=file_path, include=None, exclude=None, exclude_start_string='#', show=False)
+sheet_names = [sheet.name for sheet in wb.sheets]
+file_path = os.path.join(Save_file1 + "_有償材請求書", "有償材請求書_")
+for i, r in enumerate(sheet_names):
+    wb.to_pdf(path=file_path + str(r) + ".pdf", include=r, exclude=None, exclude_start_string='#', show=False)
+    # 注文書保存
+    wb.to_pdf(path=f_name + r"\\" + str(no_l[i]) + ".pdf", include=r, exclude=None, exclude_start_string='#', show=False)
+
+指定のセルの中に画像を貼り付け
+cell_to_insert = ws.range('L5:L6')
+image_path = matching_files[0]
+pictures = ws.pictures.add(image_path, name='MyPicture')
+pictures.left = cell_to_insert.left
+pictures.top = cell_to_insert.top
+pictures.width = cell_to_insert.width
+pictures.height = cell_to_insert.height
+
+シート作成
+ws = wb.create_sheet(index=i, title=a)
+
+セルの背景設定
+fill = PatternFill(start_color="0070C0", end_color="0070C0", fill_type="solid")  # 背景色を青色に設定
+ws.cell(row=5, column=1 + i).fill = fill
+
+
+
+
+
+
+「selenium操作」
+
+
+Webドライバー取得
+# Chrome
+folder_path = os.getcwd() + '\program\driver'
+target_filename = 'chromedriver.exe'
+driver_path = ChromeDriverManager().install()
+shutil.move(driver_path, folder_path)
+# edge
+target_filename = 'msedgedriver.exe'
+driver_path = EdgeChromiumDriverManager().install()
+shutil.move(driver_path, folder_path)
+
+Webを開く
+# Chrome
+path = os.getcwd() + r'\program\driver\chromedriver.exe'
+driver = webdriver.Chrome(service=ChromeService(executable_path=path))
+driver.get("https://secure.keihi.com/users/sign_in")
+# edge
+path = os.getcwd() + r'\program\driver\msedgedriver.exe'
+driver = webdriver.Edge(service=EdgeService(executable_path=path))
+driver.get("https://www1.e-kayoibako.com/commons/beforeLoginCheck.jsp")
+
+ウインドウのハンドルを変更
+handle_array = driver.window_handles
+driver.switch_to.window(handle_array[-1])
+
+iframe選択
+iframe = driver.find_element(By.XPATH, '//*[@id="result"]')
+driver.switch_to.frame(iframe)
+
+ドロップダウンリスト選択
+elect = Select(driver.find_element(By.XPATH, '//*[@id="brui1Cd"]'))
+select.select_by_visible_text(str(ans))
+
+ポップアップウィンドウ選択
+popup = driver.switch_to.alert
+popup.accept()
+
+ページのロードを待つ
+driver.implicitly_wait(5)
+
+オプション選択
+save_dir = ""
+options = webdriver.ChromeOptions()
+prefs = {
+    'download.default_directory': save_dir,  # ダウンロード先のフォルダ
+    'download.prompt_for_download': False,   # ダウンロード前に保存先を聞かれるのを防ぐ
+    'plugins.always_open_pdf_externally': True  # PDFファイルは常に外部プログラムで開く
+}
+options.add_experimental_option('prefs', prefs)
+user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"  # ユーザーエージェント変更
+options.add_argument(f"user-agent={user_agent}")7
+path = os.getcwd() + r'\program\driver\chromedriver.exe'
+driver = webdriver.Chrome(service=ChromeService(executable_path=path), options=options)
+
+ファイルのダウンロード
+links = driver.find_elements(By.XPATH, "//apps-workflow-components-flow-item-file-uploader/div/a[@target='_blank']")
+url = links[0].get_attribute("href")
+driver.get(url)
+
+
+
+
+
+
+「ssh操作」
+
+
+セッション開始
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+ssh接続
+hostname = 'リモートサーバーのホスト名またはIPアドレス'
+port = 22  # SSHポート番号
+username = 'ユーザー名'
+password = 'パスワード'
+ssh.connect(hostname, port, username, password)
+
+スクリプト実行
+script_path = '/path/to/your/script.sh'
+stdin, stdout, stderr = ssh.exec_command(f'bash {script_path}')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
