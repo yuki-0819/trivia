@@ -1,0 +1,10 @@
+select * from t_material_order.try_material_hst_id_seq;
+
+SELECT SETVAL ('t_material_ordertry_material_hst_id_seq', 1, false);
+SELECT SETVAL ('t_price.material_claim_metalone_id_seq', 1, false);
+select * from t_price.material_claim_metalone_id_seq;
+
+
+
+select * from t_material_order.try_material_hst_id_seq;
+SELECT SETVAL ('t_material_order.try_material_hst_id_seq', 1, false);
