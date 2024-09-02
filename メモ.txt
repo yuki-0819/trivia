@@ -1,0 +1,28 @@
+#メモ
+#from sqlalchemy import create_engin
+# isolation_level="AUTOCOMMIT"にしておく。しておかないとセッションが残り続けてテーブルをロックしていることがあった。
+# 詳しくは　https://docs.sqlalchemy.org/en/14/dialects/postgresql.html を参照
+
+#engine = create_engine('postgresql://postgres:secret@localhost:5432/postgres',isolation_level="AUTOCOMMIT")
+#df = pandas.read_sql(query,engine)
+#connection_config = {'user': User2, 'password': Pass2, 'host': Host2, 'port': Port2, 'database': Dbname2}
+#engine = create_engine('postgresql://{user}:{password}@{host}:{port}/{database}'.format(**connection_config))
+#DF = pandas.read_sql(sql=text('SELECT * FROM parameter.db_connection'), con=engine.connect()).sort_values('id', ascending=True)
+#Df1.to_sql(name="実績_月", schema='工数管理', con=engine, if_exists='append', index=False)
+
+#import oracledb
+#connection = oracledb.connect(user="system", password="hinomaruc", dsn="localhost/XE", encoding="UTF-8")
+#df = pd.read_sql(sql=query, con=connection)
+#create_engineの引数がOracleデータベースの場合は上記のように「oracle://[スキーマ名]:[パスワード]@[ホスト名]:[ポート番号]/[SID]となります。
+#SIDはOracleデータベースのインスタンスの名称です。
+#例：engine = create_engine(‘oracle://scott:tiger@127.0.0.1:1521/sidname’)
+#engine = create_engine('oracle://[your schema]:[your password]@[hostname]:1521/[SID]',encoding='utf-8')
+
+
+#params = oracledb.ConnectParams(host="172.16.10.1", port=1521, service_name="KICS")
+
+#conn = oracledb.connect(user="KICS01_PROD", password="KLX", params=params, encoding="UTF-8")
+
+#query = 'SELECT * FROM KICS01_PROD.T_DLVR_DTL'
+
+#df = pandas.read_sql(sql=query, con=conn)
