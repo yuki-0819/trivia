@@ -1,0 +1,16 @@
+import os
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+webdriver_path = ChromeDriverManager().install()
+
+expect_binary_name = 'chromedriver'
+if os.name == 'nt':
+    # windows の場合は拡張子 .exe を付ける
+    expect_binary_name += '.exe'
+actual_binary_name = os.path.basename(webdriver_path)
+if actual_binary_name != expect_binary_name:
+    webdriver_dir_path = os.path.dirname(webdriver_path)
+    webdriver_path = os.path.join(webdriver_dir_path, expect_binary_name)
+
+chrome_service = Service(executable_path=webdriver_path)
+driver = webdriver.Chrome(service=chrome_service, options=options)
