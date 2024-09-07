@@ -1,3 +1,6 @@
+追記：バージョン 4.0.2 で対応されました
+
+
 import os
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
