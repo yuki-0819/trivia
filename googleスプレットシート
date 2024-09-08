@@ -1,2 +1,31 @@
 https://tanuhack.com/gspread-dataframe/
 https://tanuhack.com/operate-spreadsheet/#i-5
+
+
+
+import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+SS_ID = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+SHEET_NAME = 'yyyyyy'
+
+scopes = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive'
+]
+
+# Credentials 情報を取得
+credentials = ServiceAccountCredentials.from_json_keyfile_name(r'.\\service_account.json', scopes)
+
+#OAuth2のクレデンシャルを使用してGoogleAPIにログイン
+gc = gspread.authorize(credentials)
+
+# IDを指定して、Googleスプレッドシートのワークブックを選択する
+workbook = gc.open_by_key(SS_ID)
+
+# シート名を指定して、ワークシートを選択
+worksheet = workbook.worksheet(SHEET_NAME)
+
+# スプレッドシートをDataFrameに取り込む
+df = pd.DataFrame(worksheet.get_values()[1:], columns=worksheet.get_values()[0])
