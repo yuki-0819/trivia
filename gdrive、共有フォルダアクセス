@@ -1,0 +1,57 @@
+https://qiita.com/YoshikiSawada/items/aabac4f3dd1a194c63d5
+
+
+# Call the Drive v3 API
+    results = service.files().list(
+        driveId="0xxxxxxxxxxxxxxxxxx",
+        corpora="drive",
+        includeItemsFromAllDrives=True,
+        supportsTeamDrives=True,
+        pageSize=10, fields="nextPageToken, files(id, name)").execute()
+    items = results.get('files', [])
+
+    if not items:
+        print('No files found.')
+    else:
+        print('Files:')
+        for item in items:
+            print(u'{0} ({1})'.format(item['name'], item['id']))
+
+
+
+
+https://workspace-hack.com/about-shared-drive-api/
+
+
+2. 指定のフォルダ内のスプレッドシートを取得してリストに代入するコード
+
+# 共有ドライブIDとフォルダIDを指定
+shared_drive_id = 'YOUR_SHARED_DRIVE_ID'
+folder_id = 'YOUR_FOLDER_ID'
+
+# ファイル名とIDを代入するリスト
+spreadsheet_files = []
+
+# 指定のフォルダ内で、スプレッドシート（MIME type）ファイルを検索
+query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.spreadsheet'"
+
+results = service.files().list(
+    q=query,
+    driveId=shared_drive_id,
+    corpora='drive',
+    includeItemsFromAllDrives=True,
+    supportsAllDrives=True,
+    fields="nextPageToken, files(id, name)"
+).execute()
+
+# スプレッドシートのファイル名とIDを取得し、リストに追加
+items = results.get('files', [])
+if not items:
+    print('指定のフォルダ内にスプレッドシートが見つかりません。')
+else:
+    for item in items:
+        spreadsheet_files.append({'name': item['name'], 'id': item['id']})
+
+# 結果を表示
+for file in spreadsheet_files:
+    print(f"Name: {file['name']}, ID: {file['id']}")
