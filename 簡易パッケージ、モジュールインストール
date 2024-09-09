@@ -1,0 +1,3 @@
+cd Z:\01_application\purchase_system\python
+
+.\python.exe -m pip install pandas
