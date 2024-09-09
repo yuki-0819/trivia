@@ -55,3 +55,37 @@ else:
 # 結果を表示
 for file in spreadsheet_files:
     print(f"Name: {file['name']}, ID: {file['id']}")
+
+
+
+
+
+from googleapiclient.http import MediaFileUpload
+
+# アップロードするファイルのパス
+file_path = 'path/to/your/file.txt'
+
+# 共有ドライブIDとフォルダIDを指定
+shared_drive_id = 'YOUR_SHARED_DRIVE_ID'
+folder_id = 'YOUR_FOLDER_ID'
+
+# アップロードするファイルのメタデータ
+file_metadata = {
+    'name': 'file.txt',  # アップロード後のファイル名
+    'parents': [folder_id],  # アップロード先フォルダID
+    'driveId': shared_drive_id,  # 共有ドライブID
+    'supportsAllDrives': True,  # 共有ドライブ対応
+}
+
+# ファイルのメディアアップロード情報
+media = MediaFileUpload(file_path, resumable=True)
+
+# ファイルをGoogle Driveにアップロード
+file = drive_service.files().create(
+    body=file_metadata,
+    media_body=media,
+    supportsAllDrives=True,  # 共有ドライブ対応
+    fields='id'
+).execute()
+
+print(f"ファイルがアップロードされました。ファイルID: {file.get('id')}")
