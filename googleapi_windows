@@ -1,0 +1,194 @@
+# GoogleAPI_Gdrive認証
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=engine.connect())
+df = df[(df['keep_name'] == "Tokenファイル")]
+addr = ""
+for r in df.itertuples():
+    addr = str(r.keep_address)
+    break
+# 認証とサービスの設定
+SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.metadata.readonly']
+creds = None
+if os.path.exists(addr + r'\token.json'):
+    creds = Credentials.from_authorized_user_file(addr + r'\token.json', SCOPES)
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(addr + r'\credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+    file = addr + r'\token.json'
+    with open(file, 'w') as token:
+        token.write(creds.to_json())
+try:
+    # Gdrive APIサービスの構築
+    service = build('drive', 'v3', credentials=creds)
+except HttpError as error:
+    ans = "NG"
+    exit()
+"""
+# 共有ドライブID調査
+results = service.drives().list().execute()
+items = results.get('drives', [])
+"""
+# 共有ドライブの指定フォルダID内のファイルリスト生成_Googleスプレッドシート
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=engine.connect())
+df = df[(df['keep_name'] == "Gdrive共有ドライブID_KLX購買部")]
+drive_id = ""
+for r in df.itertuples():
+    drive_id = str(r.keep_address)
+    break
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=engine.connect())
+df = df[(df['keep_name'] == "見積もり依頼サブマスタ保存先ID_Gdrive")]
+dir_id = ""
+for r in df.itertuples():
+    dir_id = str(r.keep_address)
+    break
+# 指定のフォルダ内で、スプレッドシート（MIME type）ファイルを検索
+query = f"'{dir_id}' in parents and mimeType='application/vnd.google-apps.spreadsheet'"
+results = service.files().list(q=query, driveId=drive_id, corpora='drive', includeItemsFromAllDrives=True, supportsAllDrives=True, fields="nextPageToken, files(id, name)").execute()
+items = results.get('files', [])
+# スプレッドシートIDとファイル名をそれぞれリストに格納
+sheet_ids = []
+sheet_names = []
+if items:
+    for item in items:
+        sheet_ids.append(item['id'])
+        sheet_names.append(item['name'])
+
+
+# GoogleAPI_スプレッドシート認証
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=engine.connect())
+df = df[(df['keep_name'] == "Tokenファイル")]
+addr = ""
+for r in df.itertuples():
+    addr = str(r.keep_address)
+    break
+# 認証とサービスの設定
+SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.metadata.readonly']
+creds = None
+if os.path.exists(addr + r'\token.json'):
+    creds = Credentials.from_authorized_user_file(addr + r'\token.json', SCOPES)
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(addr + r'\credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+    file = addr + r'\token.json'
+    with open(file, 'w') as token:
+        token.write(creds.to_json())
+try:
+    # Gdrive APIサービスの構築
+    service = build('sheets', 'v4', credentials=creds)
+except HttpError as error:
+    ans = "NG"
+    exit()
+
+
+# Googleスプレッドシートをdataframeへ変換
+for i, spreadsheet_id in enumerate(sheet_ids):
+    range_name = 'Sheet1'
+    # Google Sheets API を使用してスプレッドシートを取得
+    result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    # 取得したデータを DataFrame に変換
+    values = result.get('values', [])
+    # ヘッダーとデータの列数を合わせる（不足分を埋める）
+    header = values[0]
+    data = values[1:]
+    # データ列数が少ない場合、データに不足分の空値を追加
+    for row in data:
+        if len(row) < len(header):
+            row.extend([None] * (len(header) - len(row)))
+    # 最初の行をヘッダーとして DataFrame に変換
+    if "依頼先マスタ" in sheet_names[i]:
+        df = pd.DataFrame(values[1:], columns=values[0]).fillna("")
+        df = df[df.columns[:6]]
+        df.columns = ['col_1', 'col_2', 'col_3', 'col_4', 'col_5', 'col_6']
+        if df.empty:
+            continue
+        df.columns = ["maker_name", "mail_addr_1", "mail_addr_2", "mail_addr_3", "mail_addr_4", "mail_addr_5"]
+        # Hi-Perマスター突合
+        df['code_hpbt'] = ""
+        df['maker_name_hpbt'] = ""
+        df_mst = p_function_list.df_read_sql('m_basic_unit.transaction_list_hibt', '', 'main')
+        df_mst = df_mst[(df_mst['cancel'] == "0")]
+        for r in df_mst.itertuples():
+            df.loc[(df['maker_name'].str.contains(r.suppliers_name, regex=False)), 'code_hpbt'] = r.code
+            df.loc[(df['maker_name'].str.contains(r.suppliers_name, regex=False)), 'maker_name_hpbt'] = r.suppliers_name
+        col_l_1 = ["maker_name", "mail_addr_1", "mail_addr_2", "mail_addr_3", "mail_addr_4", "mail_addr_5",
+                   "code_hpbt", "maker_name_hpbt"]
+        col_l_2 = ["mail_addr_1", "mail_addr_2", "mail_addr_3", "mail_addr_4", "mail_addr_5", "code_hpbt",
+                   "maker_name_hpbt"]
+        table_name = "m_basic_unit.estimate_requested_by"
+        sql = f'INSERT INTO {table_name} ({", ".join(col_l_1)}) VALUES ({", ".join(["%s"] * len(col_l_1))})'
+        pgdb = psycopg2.connect(parameter)
+        cur = pgdb.cursor()
+        df_mst = p_function_list.df_read_sql('m_basic_unit.estimate_requested_by', '', 'main')
+        for r in df.itertuples():
+            df_mst_ans = df_mst[(df_mst['maker_name'] == getattr(r, "maker_name"))]
+            if df_mst_ans.empty:
+                ans_l = []
+                for c in col_l_1:
+                    ans_l.append(getattr(r, c))
+                cur.execute(sql, ans_l)
+            else:
+                for col in col_l_2:
+                    cur.execute(f'update {table_name} set {col} = %s where maker_name = %s;',
+                                (getattr(r, col), r.maker_name,))
+        pgdb.commit()
+        cur.close()
+        pgdb.close()
+    elif "物品タイプマスタ" in sheet_names[i]:
+        df = pd.DataFrame(values[1:], columns=values[0]).fillna("")
+        df = df[df.columns[:6]]
+        df.columns = ['col_1', 'col_2', 'col_3', 'col_4', 'col_5', 'col_6']
+        if df.empty:
+            continue
+        df.columns = ["item_type", "maker_name_1", "maker_name_2", "maker_name_3", "maker_name_4", "maker_name_5"]
+        col_l_1 = ["item_type", "maker_name_1", "maker_name_2", "maker_name_3", "maker_name_4", "maker_name_5"]
+        col_l_2 = ["maker_name_1", "maker_name_2", "maker_name_3", "maker_name_4", "maker_name_5"]
+        table_name = "m_basic_unit.estimate_type"
+        sql = f'INSERT INTO {table_name} ({", ".join(col_l_1)}) VALUES ({", ".join(["%s"] * len(col_l_1))})'
+        pgdb = psycopg2.connect(parameter)
+        cur = pgdb.cursor()
+        df_mst = p_function_list.df_read_sql('m_basic_unit.estimate_requested_by', '', 'main')
+        for r in df.itertuples():
+            df_mst_ans = df_mst[(df_mst['item_type'] == getattr(r, "item_type"))]
+            if df_mst_ans.empty:
+                ans_l = []
+                for c in col_l_1:
+                    ans_l.append(getattr(r, c))
+                cur.execute(sql, ans_l)
+            else:
+                for col in col_l_2:
+                    cur.execute(f'update {table_name} set {col} = %s where item_type = %s;',
+                                (getattr(r, col), r.item_type,))
+        pgdb.commit()
+        cur.close()
+        pgdb.close()
+# 受信完了メール送信
+# 送信先取得
+to_l = []
+cc_l = []
+bcc_l = []
+df = pd.read_sql(sql=text('SELECT * FROM m_code.address_list'), con=engine.connect())
+df_ans = df[(df['mail_send_auto_general'] == "to")]
+for r in df_ans.itertuples():
+    to_l.append(str(r.mail_address))
+df_ans = df[(df['mail_send_auto_general'] == "cc")]
+for r in df_ans.itertuples():
+    cc_l.append(str(r.mail_address))
+df_ans = df[(df['mail_send_auto_general'] == "bcc")]
+for r in df_ans.itertuples():
+    bcc_l.append(str(r.mail_address))
+# 使用先メール本文
+to_use = 13
+# 添付ファイル
+send_l = []
+# 追加本文
+plus = "プロセス：見積もり依頼先マスタ更新\n"
+plus += "処理時刻:" + str(datetime.datetime.now()) + "\n"
+no = 2
+#p_function_list_linux.mail_send_proc_linux(to_l, cc_l, bcc_l, to_use, send_l, plus, no)
