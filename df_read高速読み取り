@@ -1,0 +1,51 @@
+import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
+
+# チャンクサイズを指定してCSVファイルを読み込む関数
+def read_csv_in_chunks(file_path, chunksize):
+    chunks = []
+    for chunk in pd.read_csv(file_path, chunksize=chunksize):
+        chunks.append(chunk)
+    df_csv = pd.concat(chunks, ignore_index=True)
+    print(f"CSVファイルがチャンクサイズ {chunksize} で読み込まれました: {file_path}")
+    return df_csv
+
+# チャンクサイズを指定してExcelファイルを読み込む関数
+def read_excel_in_chunks(file_path, chunksize):
+    # Excelの場合、`chunksize`に対応していないため、まず全体を読み込む
+    df_excel = pd.read_excel(file_path)
+    
+    # その後、チャンクサイズに基づいて分割
+    chunks = [df_excel[i:i + chunksize] for i in range(0, df_excel.shape[0], chunksize)]
+    df_excel = pd.concat(chunks, ignore_index=True)
+    
+    print(f"Excelファイルがチャンクサイズ {chunksize} で読み込まれました: {file_path}")
+    return df_excel
+
+# 並列処理で実行する関数
+def read_files_in_parallel_with_chunks(csv_file_path, excel_file_path, chunksize):
+    with ThreadPoolExecutor() as executor:
+        # 並列に処理を実行
+        futures = [
+            executor.submit(read_csv_in_chunks, csv_file_path, chunksize),
+            executor.submit(read_excel_in_chunks, excel_file_path, chunksize)
+        ]
+        # 各処理の結果を取得
+        results = [future.result() for future in futures]
+    
+    # 結果を返す
+    return results
+
+# 実際にファイルを読み込む
+csv_file_path = 'large_data.csv'
+excel_file_path = 'large_data.xlsx'
+
+# チャンクサイズを指定
+chunksize = 10000
+
+# 並列処理でチャンクを使ってファイルを読み込む
+df_csv, df_excel = read_files_in_parallel_with_chunks(csv_file_path, excel_file_path, chunksize)
+
+# データフレームの最初の数行を表示
+print(df_csv.head())
+print(df_excel.head())
