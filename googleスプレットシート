@@ -29,3 +29,49 @@ worksheet = workbook.worksheet(SHEET_NAME)
 
 # スプレッドシートをDataFrameに取り込む
 df = pd.DataFrame(worksheet.get_values()[1:], columns=worksheet.get_values()[0])
+
+
+
+
+
+
+
+# googleスプレッドシートの指定範囲で指定（複数可）の列の値を検索し、条件に一致する行の箇所（複数可）へ値を代入
+# ※values_rangeは検索と代入を行う範囲、search_conditionsは数字は列番号、値は検索条件値、insert_dataは列名と代入する値
+def google_sheet_insert(service, sheet_ids, file_name, sheet_names, sheet_name, search_range, search_conditions, insert_data):
+    # 条件をすべて満たすかチェックする関数
+    def check_conditions(row, conditions):
+        # 各列の値が条件と一致するかを確認
+        return all(row[idx] == value for idx, value in conditions.items() if idx < len(row))
+    for i, spreadsheet_id in enumerate(sheet_ids):
+        if file_name in sheet_names[i]:
+            # スプレッドシートのデータを取得
+            sheet = service.spreadsheets()
+            result = sheet.values().get(spreadsheetId=spreadsheet_id, range=search_range).execute()
+            values = result.get('values', [])
+            for i, row in enumerate(values, start=1):  # i は行番号に対応
+                if check_conditions(row, search_conditions):
+                    # 辞書を使ってn個の範囲と値を作成
+                    data = []
+                    for col, val in insert_data.items():
+                        data.append({"range": f'{sheet_name}!{col}{i}', "values": [[val]]})
+                    # スプレッドシートに値を更新
+                    sheet.values().batchUpdate(spreadsheetId=spreadsheet_id, body={
+                        "valueInputOption": "RAW",
+                        "data": data
+                    }).execute()
+
+site = "海田・その他"
+table_name = "t_consumables_order.estimate_request_temp"
+df = function.df_read_sql(table_name, "", "main")
+user = getpass.getuser()
+if site == "海田・その他":
+    df_ans = df[(df['request_department'] == "海田・その他")]
+    for r in df_ans.itertuples():
+        file_name = "test"
+        sheet_name = "Sheet1"
+        search_range = f'{sheet_name}!A:V'
+        insert_data = {'D': 'A', 'G': 'B', 'V': 'C'}
+        search_conditions = {0: '指定の値1', 2: '指定の値2', 4: '指定の値3'}
+        google_sheet_insert(service, sheet_ids, file_name, sheet_names, sheet_name, search_range,
+                            search_conditions, insert_data)
