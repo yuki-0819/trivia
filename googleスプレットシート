@@ -75,3 +75,41 @@ if site == "海田・その他":
         search_conditions = {0: '指定の値1', 2: '指定の値2', 4: '指定の値3'}
         google_sheet_insert(service, sheet_ids, file_name, sheet_names, sheet_name, search_range,
                             search_conditions, insert_data)
+
+
+
+
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+
+# スプレッドシートIDとシート名を指定
+SPREADSHEET_ID = 'your_spreadsheet_id'  # スプレッドシートのID
+SHEET_NAME = 'Sheet1'  # シート名
+RANGE = f'{SHEET_NAME}!A:V'  # 読み取る範囲（A列からV列）
+
+# 認証情報をロード
+creds = Credentials.from_service_account_file('path/to/credentials.json')
+service = build('sheets', 'v4', credentials=creds)
+
+# スプレッドシートのデータを取得
+sheet = service.spreadsheets()
+result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE).execute()
+values = result.get('values', [])
+
+# 検索する値を指定
+search_value = '指定の値'
+
+# 一致する行を探し、D列、G列、V列に "A", "B", "C" を書き込む
+for i, row in enumerate(values, start=1):  # i は行番号に対応
+    if len(row) > 0 and row[0] == search_value:  # A列が指定の値と一致するか確認
+        # スプレッドシートに値を更新
+        sheet.values().batchUpdate(spreadsheetId=SPREADSHEET_ID, body={
+            "valueInputOption": "RAW",
+            "data": [
+                {"range": f'{SHEET_NAME}!D{i}', "values": [["A"]]},
+                {"range": f'{SHEET_NAME}!G{i}', "values": [["B"]]},
+                {"range": f'{SHEET_NAME}!V{i}', "values": [["C"]]}
+            ]
+        }).execute()
+
+print("更新完了")
