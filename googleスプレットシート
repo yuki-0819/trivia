@@ -113,3 +113,145 @@ for i, row in enumerate(values, start=1):  # i は行番号に対応
         }).execute()
 
 print("更新完了")
+
+
+
+
+
+
+# GoogleAPI_Gdrive認証
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=pram['main'].connect())
+df = df[(df['keep_name'] == "Tokenファイル")]
+addr = ""
+for r in df.itertuples():
+    addr = str(r.keep_address)
+    break
+# 認証とサービスの設定
+SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.metadata.readonly']
+creds = None
+if os.path.exists(addr + r'\token.json'):
+    creds = Credentials.from_authorized_user_file(addr + r'\token.json', SCOPES)
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(addr + r'\credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+    file = addr + r'\token.json'
+    with open(file, 'w') as token:
+        token.write(creds.to_json())
+try:
+    # Gdrive APIサービスの構築
+    service = build('drive', 'v3', credentials=creds)
+except HttpError as error:
+    ans = "NG"
+    exit()
+"""
+# 共有ドライブID調査
+results = service.drives().list().execute()
+items = results.get('drives', [])
+"""
+# 共有ドライブの指定フォルダID内のファイルリスト生成_Googleスプレッドシート
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=pram['main'].connect())
+df = df[(df['keep_name'] == "Gdrive共有ドライブID_KLX購買部")]
+drive_id = ""
+for r in df.itertuples():
+    drive_id = str(r.keep_address)
+    break
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=pram['main'].connect())
+df = df[(df['keep_name'] == "見積もり依頼スプレッドシート保存先ID_Gdrive")]
+dir_id = ""
+for r in df.itertuples():
+    dir_id = str(r.keep_address)
+    break
+# 指定のフォルダ内で、スプレッドシート（MIME type）ファイルを検索
+query = f"'{dir_id}' in parents and trashed=false and mimeType='application/vnd.google-apps.spreadsheet'"
+results = service.files().list(q=query, driveId=drive_id, corpora='drive', includeItemsFromAllDrives=True, supportsAllDrives=True, fields="nextPageToken, files(id, name)").execute()
+items = results.get('files', [])
+# スプレッドシートIDとファイル名をそれぞれリストに格納
+sheet_ids = []
+sheet_names = []
+if items:
+    for item in items:
+        sheet_ids.append(item['id'])
+        sheet_names.append(item['name'])
+
+
+# GoogleAPI_スプレッドシート認証
+df = pd.read_sql(sql=text('SELECT * FROM m_system.keep_place'), con=pram['main'].connect())
+df = df[(df['keep_name'] == "Tokenファイル")]
+addr = ""
+for r in df.itertuples():
+    addr = str(r.keep_address)
+    break
+# 認証とサービスの設定
+SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.metadata.readonly']
+creds = None
+if os.path.exists(addr + r'\token.json'):
+    creds = Credentials.from_authorized_user_file(addr + r'\token.json', SCOPES)
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(addr + r'\credentials.json', SCOPES)
+        creds = flow.run_local_server(port=0)
+    file = addr + r'\token.json'
+    with open(file, 'w') as token:
+        token.write(creds.to_json())
+try:
+    # Gdrive APIサービスの構築
+    service = build('sheets', 'v4', credentials=creds)
+except HttpError as error:
+    ans = "NG"
+    exit()
+
+
+# googleスプレッドシートの指定範囲で指定（複数可）の列の値を検索し、条件に一致する行の箇所（複数可）へ値を代入
+# ※values_rangeは検索と代入を行う範囲、search_conditionsは数字は列番号、値は検索条件値、insert_dataは列名と代入する値
+def google_sheet_insert(service, sheet_ids, file_name, sheet_names, sheet_name, search_range, search_conditions, insert_data):
+    # 条件をすべて満たすかチェックする関数
+    def check_conditions(row, conditions):
+        # 各列の値が条件と一致するかを確認
+        return all(row[idx] == value for idx, value in conditions.items() if idx < len(row))
+    for i, spreadsheet_id in enumerate(sheet_ids):
+        if file_name in sheet_names[i]:
+            # スプレッドシートのデータを取得
+            sheet = service.spreadsheets()
+            result = sheet.values().get(spreadsheetId=spreadsheet_id, range=search_range).execute()
+            values = result.get('values', [])
+            for i, row in enumerate(values, start=1):  # i は行番号に対応
+                if check_conditions(row, search_conditions):
+                    # 辞書を使ってn個の範囲と値を作成
+                    data = []
+                    for col, val in insert_data.items():
+                        data.append({"range": f'{sheet_name}!{col}{i}', "values": [[val]]})
+                    # スプレッドシートに値を更新
+                    sheet.values().batchUpdate(spreadsheetId=spreadsheet_id, body={
+                        "valueInputOption": "RAW",
+                        "data": data
+                    }).execute()
+
+site = "test"
+table_name = "t_consumables_order.estimate_request_temp"
+df = function.df_read_sql(table_name, "", "main")
+user = getpass.getuser()
+
+df_addr = function.df_read_sql("m_code.address_list", "", "main")
+df_addr = df_addr[(df_addr['post_code']) == user]
+name = ""
+for r in df_addr.itertuples():
+    name = r.manager_name.split('　')[0]
+    break
+if site == "test":
+    df_ans = df[(df['request_department'] == "海田・その他")]
+    for r in df_ans.itertuples():
+        file_name = "test"
+        sheet_name = "Sheet1"
+        search_range = f'{sheet_name}!A:AA'
+        insert_data = {'B': name, 'O': r.requested_by_1, 'R': r.requested_by_2, 'U': r.requested_by_3,
+                       'X': r.requested_by_4, 'AA': r.requested_by_5}
+        search_conditions = {0: r.orgnl_id}
+        google_sheet_insert(service, sheet_ids, file_name, sheet_names, sheet_name, search_range,
+                            search_conditions, insert_data)
