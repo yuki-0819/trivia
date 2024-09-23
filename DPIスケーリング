@@ -1,0 +1,67 @@
+import tkinter as tk
+
+def set_dpi_scaling(root, scaling_factor):
+    # scaling_factor は 1.0 が 100%、1.25 が 125%、1.5 が 150% のスケーリングに対応します
+    root.tk.call('tk', 'scaling', scaling_factor)
+
+# ウィンドウを作成
+root = tk.Tk()
+
+# ウィンドウタイトル
+root.title("DPIスケーリングのテスト")
+
+# ウィンドウサイズ
+root.geometry("500x300")
+
+# DPIスケーリングを設定 (例えば1.5は150%の拡大)
+set_dpi_scaling(root, 1.5)
+
+# ラベルを追加してテスト
+label = tk.Label(root, text="このテキストはDPIスケーリングの影響を受けます。", font=("Arial", 20))
+label.pack(pady=50)
+
+# メインループを開始
+root.mainloop()
+
+
+
+
+
+# Tkinterスケーリングの取得
+scaling = root.tk.call('tk', 'scaling')
+print(f"現在のTkinterのスケーリング: {scaling}")
+
+
+
+import ctypes
+import tkinter as tk
+
+def set_dpi_awareness():
+    """WindowsのDPI認識を有効にする"""
+    try:
+        # DPI認識を有効にする (Windows 8.1以降)
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # システムDPI認識を有効にする
+    except Exception as e:
+        print(f"DPI認識の設定に失敗しました: {e}")
+
+# DPI認識を有効にする
+set_dpi_awareness()
+
+# Tkinterウィンドウを作成
+root = tk.Tk()
+
+# Tkinterのスケーリングを100%に固定する
+root.tk.call('tk', 'scaling', 1.0)
+
+# ウィンドウタイトル
+root.title("Tkinter DPI 100%")
+
+# ウィンドウサイズを設定
+root.geometry("500x300")
+
+# ラベルを追加してテスト表示
+label = tk.Label(root, text="DPIスケーリングは100%に固定されています", font=("Arial", 20))
+label.pack(pady=50)
+
+# メインループ開始
+root.mainloop()
