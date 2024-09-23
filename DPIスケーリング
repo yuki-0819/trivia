@@ -65,3 +65,49 @@ label.pack(pady=50)
 
 # メインループ開始
 root.mainloop()
+
+
+
+import ctypes
+import tkinter as tk
+from tkinter import Toplevel
+
+def set_dpi_awareness():
+    """WindowsのDPI認識を有効にする"""
+    try:
+        # DPI認識を有効にする (Windows 8.1以降)
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # システムDPI認識を有効にする
+    except Exception as e:
+        print(f"DPI認識の設定に失敗しました: {e}")
+
+def open_new_window():
+    """新しいウィンドウを開く"""
+    new_window = Toplevel()
+    new_window.title("新しいウィンドウ")
+    new_window.geometry("300x200")
+    label = tk.Label(new_window, text="このウィンドウもDPIスケーリングは100%です", font=("Arial", 12))
+    label.pack(pady=20)
+
+# DPI認識を有効にする
+set_dpi_awareness()
+
+# メインウィンドウを作成
+root = tk.Tk()
+
+# Tkinterのスケーリングを100%に固定する
+root.tk.call('tk', 'scaling', 1.0)
+
+# メインウィンドウ設定
+root.title("Tkinter DPI 100% 固定")
+root.geometry("500x300")
+
+# ラベルを追加してテスト表示
+label = tk.Label(root, text="DPIスケーリングは100%に固定されています", font=("Arial", 20))
+label.pack(pady=50)
+
+# ボタンを追加して新しいウィンドウを開く
+btn = tk.Button(root, text="新しいウィンドウを開く", command=open_new_window)
+btn.pack(pady=20)
+
+# メインループ開始
+root.mainloop()
