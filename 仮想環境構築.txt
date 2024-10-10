@@ -1,0 +1,9 @@
+﻿py -3.8 -m venv C:\Share\99.その他\Python\仮想環境\〇
+
+py -3.8 -m venv C:\Python\virtualenv\construction
+
+py -3.9 -m venv C:\Python仮想環境\〇
+
+
+
+py -3.8 -m venv C:\Python\仮想環境\業務ツール
