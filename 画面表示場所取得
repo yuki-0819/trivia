@@ -1,0 +1,41 @@
+import tkinter as tk
+import pyautogui
+from screeninfo import get_monitors
+
+# マウスカーソルがあるディスプレイを取得する関数
+def get_cursor_screen():
+    mouse_x, mouse_y = pyautogui.position()
+    monitors = get_monitors()
+
+    for monitor in monitors:
+        if (monitor.x <= mouse_x < monitor.x + monitor.width) and (monitor.y <= mouse_y < monitor.y + monitor.height):
+            return monitor
+    return None
+
+# ウィンドウを指定のディスプレイの中央に配置する関数
+def center_window_on_screen(window, monitor):
+    win_width = window.winfo_reqwidth()
+    win_height = window.winfo_reqheight()
+
+    # ディスプレイの中央にウィンドウを配置
+    x = monitor.x + (monitor.width // 2) - (win_width // 2)
+    y = monitor.y + (monitor.height // 2) - (win_height // 2)
+    window.geometry(f"{win_width}x{win_height}+{x}+{y}")
+
+# Tkinterのウィンドウ作成
+root = tk.Tk()
+root.title("マウスカーソルのディスプレイに表示")
+
+# マウスがあるディスプレイを取得
+monitor = get_cursor_screen()
+
+if monitor:
+    # ウィンドウサイズを設定（例: 400x300）
+    root.geometry("400x300")
+    # マウスカーソルがあるディスプレイの中央にウィンドウを配置
+    center_window_on_screen(root, monitor)
+else:
+    print("マウスの位置がディスプレイの範囲外です")
+
+# Tkinterのメインループ
+root.mainloop()
