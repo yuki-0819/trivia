@@ -1,0 +1,13 @@
+import pandas as pd
+
+# サンプルデータ
+data = {'A': [0.1, 0.25, 0.5, 0.75, 1.0]}
+df = pd.DataFrame(data)
+
+# A列を百分率でB列に表示
+df['B'] = df['A'] * 100
+
+# B列を%形式で表示
+df['B'] = df['B'].map(lambda x: f"{x:.2f}%")
+
+print(df)
