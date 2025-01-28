@@ -1,0 +1,52 @@
+import datetime
+
+def calculate_previous_date(date_str):
+    # 入力の日付をdatetimeオブジェクトに変換
+    current_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    # 1日前を計算
+    previous_date = current_date - datetime.timedelta(days=1)
+
+    # 1日前の日付が土曜日または日曜日の場合
+    if previous_date.weekday() in (5, 6):  # 5: 土曜日, 6: 日曜日
+        # 金曜日まで戻る
+        offset = previous_date.weekday() - 4  # 4: 金曜日
+        previous_date -= datetime.timedelta(days=offset)
+
+    return previous_date
+
+# 使用例
+input_date = "2025-01-27"  # 入力の日付
+result = calculate_previous_date(input_date)
+print(f"計算結果: {result}")
+
+
+
+
+import datetime
+
+def calculate_previous_date_with_holidays(date_str, holidays):
+    # 入力の日付をdatetimeオブジェクトに変換
+    current_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    # 1日前を計算
+    previous_date = current_date - datetime.timedelta(days=1)
+
+    # 休日リストをセットに変換（高速検索のため）
+    holiday_set = set(holidays)
+
+    # 休日または土日の場合、前の日付を探索
+    while previous_date.weekday() in (5, 6) or previous_date in holiday_set:  # 土日または休日
+        previous_date -= datetime.timedelta(days=1)  # 前の日付に戻る
+
+    return previous_date
+
+# 使用例
+input_date = "2025-01-27"  # 入力の日付
+holiday_list = [
+    datetime.date(2025, 1, 1),  # 元日
+    datetime.date(2025, 1, 13), # 成人の日
+    datetime.date(2025, 2, 11), # 建国記念の日
+    datetime.date(2025, 1, 24)  # カスタムの休日として金曜日を追加
+]
+
+result = calculate_previous_date_with_holidays(input_date, holiday_list)
+print(f"計算結果: {result}")
