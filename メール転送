@@ -1,0 +1,111 @@
+import time
+import base64
+import psycopg2
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from email.mime.text import MIMEText
+
+# ==========================
+# Gmail API認証設定
+# ==========================
+SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+SERVICE_ACCOUNT_FILE = "credentials.json"  # OAuth2の認証情報
+
+def gmail_auth():
+    creds = None
+    creds = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE, scopes=SCOPES
+    )
+    service = build("gmail", "v1", credentials=creds)
+    return service
+
+# ==========================
+# PostgreSQL接続設定
+# ==========================
+DB_CONFIG = {
+    "dbname": "your_db",
+    "user": "your_user",
+    "password": "your_password",
+    "host": "your_host",
+    "port": "5432"
+}
+
+def get_forwarding_rules():
+    """PostgreSQLからメール転送ルールを取得"""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    cur.execute("SELECT read_addr, send_addr FROM mail_forwarding")
+    rules = cur.fetchall()
+    conn.close()
+    return {read: send for read, send in rules}
+
+# ==========================
+# Gmailの未読メールを取得
+# ==========================
+def get_unread_emails(service, user_id="me"):
+    """未読メールを取得"""
+    result = service.users().messages().list(userId=user_id, q="is:unread").execute()
+    messages = result.get("messages", [])
+    return messages
+
+# ==========================
+# メールを転送する
+# ==========================
+def forward_email(service, sender, recipient, subject, body):
+    """メールを転送する"""
+    message = MIMEText(body)
+    message["to"] = recipient
+    message["from"] = sender
+    message["subject"] = f"Fwd: {subject}"
+
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    message = {"raw": raw_message}
+
+    service.users().messages().send(userId="me", body=message).execute()
+
+# ==========================
+# メールを既読にする
+# ==========================
+def mark_as_read(service, msg_id):
+    """メールを既読にする"""
+    service.users().messages().modify(
+        userId="me", id=msg_id, body={"removeLabelIds": ["UNREAD"]}
+    ).execute()
+
+# ==========================
+# メイン処理
+# ==========================
+def main():
+    service = gmail_auth()
+    forwarding_rules = get_forwarding_rules()
+
+    while True:
+        messages = get_unread_emails(service)
+        for msg in messages:
+            msg_id = msg["id"]
+            message = service.users().messages().get(userId="me", id=msg_id).execute()
+
+            headers = {h["name"]: h["value"] for h in message["payload"]["headers"]}
+            sender = headers.get("From", "")
+            subject = headers.get("Subject", "")
+            body = ""
+
+            if "parts" in message["payload"]:
+                for part in message["payload"]["parts"]:
+                    if part["mimeType"] == "text/plain":
+                        body = base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8")
+
+            # 転送ルールに一致する場合、転送
+            if sender in forwarding_rules:
+                forward_to = forwarding_rules[sender]
+                forward_email(service, sender, forward_to, subject, body)
+                print(f"転送: {sender} → {forward_to}")
+
+                # メールを既読に変更
+                mark_as_read(service, msg_id)
+                print(f"既読化: {msg_id}")
+
+        time.sleep(60)  # 1分ごとにチェック
+
+if __name__ == "__main__":
+    main()
