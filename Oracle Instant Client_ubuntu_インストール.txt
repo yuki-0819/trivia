@@ -1,4 +1,6 @@
-sudo apt install alien libaio1
+sudo apt install alien libaio1t64
+
+sudo ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 /usr/lib/x86_64-linux-gnu/libaio.so.1
 
 sudo alien -i oracle-instantclient19.12-basiclite-19.12.0.0.0-1.x86_64.rpm
 
