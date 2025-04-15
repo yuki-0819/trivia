@@ -1,0 +1,30 @@
+from concurrent.futures import ProcessPoolExecutor
+import psycopg2
+import multiprocessing
+
+def chunk_data(data, chunk_size=10000):
+    for i in range(0, len(data), chunk_size):
+        yield data[i:i+chunk_size]
+
+def insert_chunk(data_chunk):
+    conn = psycopg2.connect(...)
+    cur = conn.cursor()
+    sql = "INSERT INTO your_table (name, value) VALUES (%s, %s)"
+    try:
+        cur.executemany(sql, data_chunk)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print("Insert failed:", e)
+    finally:
+        cur.close()
+        conn.close()
+
+if __name__ == "__main__":
+    # データ例
+    data = [(f"name_{i}", i) for i in range(900000)]
+
+    # 並列実行
+    chunks = list(chunk_data(data, 10000))
+    with ProcessPoolExecutor(max_workers=multiprocessing.cpu_count()) as executor:
+        executor.map(insert_chunk, chunks)
