@@ -1,0 +1,74 @@
+#　パスワードなし
+import subprocess
+
+# 転送するローカルファイルと先の情報
+local_file = "/home/ubuntu/sample.txt"
+remote_folder = "shared_folder"
+remote_host = "192.168.1.100"
+remote_file = "sample.txt"
+
+# smbclientコマンドを実行（パスワードなし、ゲスト接続）
+cmd = f'''smbclient //{remote_host}/{remote_folder} -N -c "put {local_file} {remote_file}"'''
+
+try:
+    subprocess.run(cmd, shell=True, check=True)
+    print("✅ ファイルを転送しました")
+except subprocess.CalledProcessError as e:
+    print("❌ 転送に失敗:", e)
+
+
+
+# パスワードあり
+username = "your_user"
+password = "your_pass"
+cmd = f'''smbclient //{remote_host}/{remote_folder} -U {username}%{password} -c "put {local_file} {remote_file}"'''
+
+
+
+
+import glob
+import os
+
+local_dir = "/home/ubuntu/documents/"
+file_list = glob.glob(os.path.join(local_dir, "*.txt"))
+
+for file_path in file_list:
+    filename = os.path.basename(file_path)
+    cmd = f'''smbclient //{remote_host}/{remote_folder} -N -c "put {file_path} {filename}"'''
+    subprocess.run(cmd, shell=True)
+
+
+
+
+import os
+import subprocess
+
+local_root = "/home/ubuntu/source_folder"  # コピー元
+remote_host = "192.168.1.100"              # 共有先ホスト
+remote_share = "shared_folder"            # 共有フォルダ名
+remote_root = ""                          # 共有フォルダ直下にコピー
+
+def smb_mkdir(path):
+    # ディレクトリ作成（存在しない場合）
+    cmd = f'smbclient //{remote_host}/{remote_share} -N -c "mkdir \\"{path}\\""'
+    subprocess.run(cmd, shell=True)
+
+def smb_put(local_path, remote_path):
+    # ファイルをアップロード
+    cmd = f'smbclient //{remote_host}/{remote_share} -N -c "put \\"{local_path}\\" \\"{remote_path}\\""'
+    subprocess.run(cmd, shell=True)
+
+for root, dirs, files in os.walk(local_root):
+    relative_path = os.path.relpath(root, local_root)
+    smb_path = os.path.join(remote_root, relative_path).replace("\\", "/")
+
+    if relative_path != ".":
+        smb_mkdir(smb_path)
+
+    for file in files:
+        local_file_path = os.path.join(root, file)
+        remote_file_path = os.path.join(smb_path, file).replace("\\", "/")
+        smb_put(local_file_path, remote_file_path)
+
+
+subprocess.run(cmd, shell=True, stdout=open("copy_log.txt", "a"))
