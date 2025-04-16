@@ -1,0 +1,154 @@
+import pandas as pd
+import psycopg2
+from multiprocessing import Pool, cpu_count
+import logging  # エラーログ用
+
+# logging の設定（必要に応じて）
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def db_conn_linux():
+    """Linux環境でのDB接続情報を返す（実際の実装に合わせてください）"""
+    return {"sql_pram": "your_db_connection_string"}
+
+def error_proc_linux(contents, er_code, end_process):
+    """エラー処理関数（実際の実装に合わせてください）"""
+    logging.error(f"Error Code: {er_code}, Contents: {contents}")
+    if end_process == "return":
+        return {"error": True, "message": contents, "code": er_code}
+    # その他のエラー処理
+
+def _update_chunk(df_chunk: pd.DataFrame, table_name: str, col_l: list, col_l_int: list = None,
+                  col_l_float: list = None, col_l_date: list = None, col_l_where: dict = None,
+                  val_l_where: list = None, db_params: str = None):
+    """DataFrameの一部を更新するワーカー関数"""
+    if val_l_where is None:
+        val_l_where = []
+    if col_l_where is None:
+        col_l_where = {}
+    if col_l_date is None:
+        col_l_date = []
+    if col_l_float is None:
+        col_l_float = []
+    if col_l_int is None:
+        col_l_int = []
+
+    try:
+        for col in col_l_int:
+            df_chunk[col] = pd.to_numeric(df_chunk[col], errors='coerce')
+        for col in col_l_float:
+            df_chunk[col] = pd.to_numeric(df_chunk[col], errors='coerce')
+        for col in col_l_date:
+            df_chunk[col] = pd.to_datetime(df_chunk[col], errors='coerce')
+            df_chunk[col] = df_chunk[col].apply(lambda x: x.date() if pd.notna(x) else None)
+    except Exception as ex:
+        logging.error(f"Error during data type conversion in worker: {ex}")
+        return f"Error during data type conversion: {ex}"
+
+    df_chunk = df_chunk.fillna(None)
+    pgdb = None
+    cur = None
+    try:
+        pgdb = psycopg2.connect(db_params)
+        cur = pgdb.cursor()
+        set_clause = ', '.join([f"{col} = %s" for col in col_l])
+        where_clause = ' AND '.join([f"{cond} = %s" for cond in col_l_where.keys()])
+        sql = f"UPDATE {table_name} SET {set_clause} WHERE {where_clause}"
+        data = []
+        for _, row in df_chunk.iterrows():
+            update_values = [row[col] for col in col_l]
+            params = list(update_values) + val_l_where
+            data.append(tuple(params))
+        cur.executemany(sql, data)
+        pgdb.commit()
+    except Exception as ex:
+        logging.error(f"Error during database operation in worker: {ex}")
+        if cur:
+            cur.close()
+        if pgdb:
+            pgdb.rollback()
+            pgdb.close()
+        return f"Error during database operation: {ex}"
+    finally:
+        if cur:
+            cur.close()
+        if pgdb:
+            pgdb.close()
+    return None
+
+def df_sql_update_parallel(df: pd.DataFrame, table_name: str, col_l: list, col_l_int: list = None,
+                           col_l_float: list = None, col_l_date: list = None, col_l_where: dict = None,
+                           val_l_where: list = None, num_processes: int = None):
+    """DataFrameの更新処理を並列に行う関数"""
+    if num_processes is None:
+        num_processes = cpu_count()  # 利用可能なCPUコア数をデフォルトにする
+
+    pram = db_conn_linux()
+    db_params = pram["sql_pram"]
+
+    # DataFrameをチャンクに分割
+    df_chunks = pd.array_split(df, num_processes)
+
+    # 各チャンクに渡す引数を準備
+    worker_args = [(chunk, table_name, col_l, col_l_int, col_l_float, col_l_date, col_l_where, val_l_where, db_params)
+                   for chunk in df_chunks]
+
+    try:
+        with Pool(processes=num_processes) as pool:
+            results = pool.starmap(_update_chunk, worker_args)
+
+        # エラーチェック
+        errors = [res for res in results if res is not None]
+        if errors:
+            error_message = "\n".join(errors)
+            proc = error_proc_linux(contents=error_message, er_code="ER004_PARALLEL", end_process="return")
+            return proc
+
+        return {"success": True, "message": f"{len(df)} rows updated in parallel."}
+
+    except Exception as ex:
+        proc = error_proc_linux(contents=str(ex), er_code="ER010_PARALLEL", end_process="return")
+        return proc
+
+if __name__ == '__main__':
+    # テスト用のDataFrameを作成
+    data = {'id': range(1, 1001), 'name': ['Test'] * 1000, 'value': [i * 1.1 for i in range(1000)], 'update_date': ['2023-01-01'] * 1000}
+    test_df = pd.DataFrame(data)
+    test_df['int_col'] = test_df['id']
+    test_df['float_col'] = test_df['value']
+    test_df['date_col'] = test_df['update_date']
+
+    # 更新対象の列と条件
+    update_columns = ['name', 'value', 'date_col']
+    integer_columns = ['int_col']
+    float_columns = ['float_col']
+    date_columns = ['date_col']
+    where_columns = {'id': 1}  # WHERE id = %s
+    where_values = [1]
+
+    # 並列処理を実行
+    result_parallel = df_sql_update_parallel(
+        test_df,
+        'your_table_name',  # 実際のテーブル名に置き換えてください
+        update_columns,
+        col_l_int=integer_columns,
+        col_l_float=float_columns,
+        col_l_date=date_columns,
+        col_l_where=where_columns,
+        val_l_where=where_values,
+        num_processes=4  # 使用するプロセス数を指定（Noneの場合はCPUコア数）
+    )
+
+    print("Parallel Update Result:", result_parallel)
+
+    # 元の逐次処理を実行（比較用）
+    # result_sequential = df_sql_update(
+    #     test_df,
+    #     'your_table_name',  # 実際のテーブル名に置き換えてください
+    #     update_columns,
+    #     col_l_int=integer_columns,
+    #     col_l_float=float_columns,
+    #     col_l_date=date_columns,
+    #     col_l_where=where_columns,
+    #     val_l_where=where_values
+    # )
+    # print("Sequential Update Result:", result_sequential)
