@@ -1,0 +1,38 @@
+@echo off
+set SHARE=\\SERVER\SharedFolder
+set USER=your_username
+set PASSWORD=your_password
+
+rem ネットワークドライブの一時接続（Zドライブとしてマウントする例）
+net use Z: %SHARE% /user:%USER% %PASSWORD%
+か
+net use %SHARE% /user:%USER% %PASSWORD%
+
+
+rem フォルダの中を確認（接続確認用）
+dir Z:\
+
+rem 処理が終わったら切断（任意）
+net use Z: /delete /y
+
+
+
+
+
+@echo off
+set SHARE=\\172.28.57.124
+set USER=master
+set PASSWORD=keylex
+
+rem マスターフォルダ接続
+net use %SHARE% /delete /y
+net use %SHARE% /user:%USER% %PASSWORD%
+
+
+
+
+
+rem マスターフォルダ切断
+net use %SHARE% /delete /y
+
+
