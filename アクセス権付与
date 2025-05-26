@@ -20,19 +20,21 @@ net use Z: /delete /y
 
 
 @echo off
-set SHARE=\\172.28.57.124
+set SHARE1=\\172.28.57.124\storage
+set SHARE2=\\172.28.57.124\auto_program
 set USER=master
 set PASSWORD=keylex
 
 rem マスターフォルダ接続
-net use %SHARE% /delete /y
-net use %SHARE% /user:%USER% %PASSWORD%
-
+net use %SHARE1% /delete /y
+net use %SHARE2% /delete /y
+net use %SHARE1% /user:%USER% %PASSWORD%
+net use %SHARE2% /user:%USER% %PASSWORD%
 
 
 
 
 rem マスターフォルダ切断
-net use %SHARE% /delete /y
-
+net use %SHARE1% /delete /y
+net use %SHARE2% /delete /y
 
