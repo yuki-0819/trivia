@@ -1,0 +1,37 @@
+chmod +x /home/master/auto/startup.sh
+
+
+chown master:master /home/master/auto/startup.sh
+
+
+sudo nano /etc/systemd/system/startup-after-network.service
+
+
+[Unit]
+Description=Run startup.sh after network online
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=master
+Group=master
+WorkingDirectory=/home/master/auto
+Environment="HOME=/home/master"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/master/auto/startup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+sudo systemctl enable NetworkManager-wait-online.service
+
+sudo systemctl daemon-reload
+sudo systemctl enable startup-after-network.service
+sudo systemctl start startup-after-network.service
+
+systemctl status startup-after-network.service
+journalctl -u startup-after-network.service
