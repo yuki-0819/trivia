@@ -1,0 +1,27 @@
+import paramiko
+
+def run_sh_script_silent(host, username, password, script_path, port=22):
+    try:
+        # SSH接続
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname=host, username=username, password=password, port=port)
+
+        # ログなし・バックグラウンド実行
+        command = f"nohup bash {script_path} > /dev/null 2>&1 &"
+
+        ssh.exec_command(command)  # 出力は不要なので読み取らない
+        ssh.close()
+
+        print("✅ スクリプトをバックグラウンドで実行し、ログなしで切断しました。")
+
+    except Exception as e:
+        print(f"❌ エラー: {e}")
+
+# 使用例
+run_sh_script_silent(
+    host="192.168.1.100",
+    username="ubuntu_user",
+    password="your_password",
+    script_path="/home/ubuntu/my_script.sh"
+)
