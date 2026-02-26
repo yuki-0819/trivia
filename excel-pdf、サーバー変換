@@ -1,0 +1,53 @@
+import paramiko
+from pathlib import Path
+import tkinter as tk
+from tkinter import filedialog
+
+# ===== SSH情報 =====
+HOST = "192.168.1.10"
+USERNAME = "user"
+PASSWORD = "password"
+
+# ===== 変換対象 =====
+local_excel = Path("sample.xlsx")
+remote_excel = f"/tmp/{local_excel.name}"
+remote_pdf = f"/tmp/{local_excel.stem}.pdf"
+
+# ===== SSH接続 =====
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(HOST, username=USERNAME, password=PASSWORD)
+
+sftp = ssh.open_sftp()
+
+# ① Excel送信
+sftp.put(str(local_excel), remote_excel)
+
+# ② PDF変換
+cmd = f"libreoffice --headless --convert-to pdf {remote_excel} --outdir /tmp"
+stdin, stdout, stderr = ssh.exec_command(cmd)
+stdout.channel.recv_exit_status()
+
+# ③ PDF取得
+local_temp_pdf = Path(remote_pdf.split("/")[-1])
+sftp.get(remote_pdf, str(local_temp_pdf))
+
+# 後処理（サーバー側削除）
+ssh.exec_command(f"rm {remote_excel} {remote_pdf}")
+
+sftp.close()
+ssh.close()
+
+# ④ 保存ダイアログ表示
+root = tk.Tk()
+root.withdraw()
+
+save_path = filedialog.asksaveasfilename(
+    defaultextension=".pdf",
+    filetypes=[("PDF files", "*.pdf")]
+)
+
+if save_path:
+    Path(local_temp_pdf).rename(save_path)
+
+print("完了")
